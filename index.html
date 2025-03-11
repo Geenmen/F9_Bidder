@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>F9 Bidder</title>
+    <link rel="stylesheet" href="F9_Bidder.css" />
+</head>
+<body>
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="login-container">
+        <h2>Restricted Access</h2>
+        <p>Please enter your employee ID:</p>
+        <input type="text" id="employee-id" placeholder="Employee ID" class="login-input">
+        <button id="login-btn" class="login-button">Enter</button>
+        <p id="error-message" class="login-error"></p>
+    </div>
+
+
+
+    <div id="app-screen" class="hidden">
+
+        <header>
+            <h1>F9 Schedule Builder</h1>
+            <h5>Step 1: Upload Data </h5>
+            <h5>Step 2: Add your Filters</h5>
+            <h5>Step 3: Finalize your Bid Results</h5>
+
+            <nav>
+                <button class="step-button" onclick="showSection('data-extraction')">Upload Data</button>
+                <button class="step-button" onclick="showSection('filters')">Filters</button>
+                <button class="step-button" onclick="showSection('results')">Results</button>
+            </nav>
+        </header>
+
+
+
+        <main>
+            <!-- Data Extraction Section -->
+            <section id="data-extraction" class="section hidden">
+                <h2>Data Extraction</h2>
+                <p>Upload a .txt file containing the bid packet:</p>
+                <input type="file" id="file-input" accept=".txt">
+                <p>This file will be sent out monthly when available.</p>
+            </section>
+
+            <!-- Filters Section -->
+            <section id="filters" class="section hidden">
+                <h2>Filters</h2>
+
+                <!-- Container holds Daily Filters and Monthly Filters side by side -->
+                <div id="filters-container">
+
+                    <!-- DAILY FILTERS -->
+                    <div id="daily-filters">
+                        <h3>Daily Filters</h3>
+
+                        <div>
+                            <label for="credit-min">Min Credit Hours: (Rounded):</label>
+                            <input type="number" id="credit-min" placeholder="e.g., 5">
+                        </div>
+
+                        <div>
+                            <label for="credit-max">Max Credit Hours: (Rounded):</label>
+                            <input type="number" id="credit-max" placeholder="e.g., 10">
+                        </div>
+
+                        <div>
+                            <label for="tafb-max">Max T.A.F.B. in Hours: (Rounded):</label>
+                            <input type="number" id="tafb-max" placeholder="e.g., 24">
+                        </div>
+
+                        <div>
+                            <label for="start-time">Earliest Pairing Start Time (HH:mm):</label>
+                            <input type="time" id="start-time" placeholder="e.g., 05:30">
+                        </div>
+                    </div>
+
+                    <!-- MONTHLY FILTERS -->
+                    <div id="monthly-filters">
+                        <h3>Monthly Filters</h3>
+
+                        <div>
+                            <label for="omit-days"> Requested Days Off: (comma-separated):</label>
+                            <input type="text" id="omit-days" placeholder="e.g., 15,16,17">
+                        </div>
+
+                        <div>
+                            <label for="omit-routes">Blacklist Pairing Route: (comma-separated):</label>
+                            <input type="text" id="omit-routes" placeholder="e.g., CLE-TPA,TPA-CLE">
+                        </div>
+                    </div>
+
+                </div>
+                <!-- Apply Filters Button -->
+                <button onclick="applyFilters()">Apply Filters</button>
+            </section>
+
+            <!-- Results Section -->
+            <section id="results" class="section hidden">
+                <h2>Results</h2>
+
+                <!-- This container will hold the compiler options + schedule summary side by side -->
+                <div id="compiler-container">
+
+                    <!-- Left column: compiler options (user inputs) -->
+                    <div id="compiler-options-card">
+                        <h3>Auto Schedule Compiler</h3>
+
+                        <!-- "Maximize" checkbox -->
+                        <div style="margin: 10px 0;">
+                            <input type="checkbox" id="maximize-credits" />
+                            <label for="maximize-credits">Maximize Credit Hours and Days Off</label>
+                        </div>
+
+                        <!-- Credit + TAFB inputs -->
+                        <div>
+                            <label for="max-monthly-credit">Max Monthly Credit (up to 120h):</label>
+                            <input type="number"
+                                   id="max-monthly-credit"
+                                   value="100"
+                                   min="60"
+                                   max="120" />
+                        </div>
+                        <div>
+                            <label for="max-monthly-tafb">Max Monthly T.A.F.B. (in hours):</label>
+                            <input type="number"
+                                   id="max-monthly-tafb"
+                                   value="800"
+                                   min="60"
+                                   max="800" />
+                        </div>
+                        <div>
+                            <label for="max-block-size">Max Consecutive Working Days:</label>
+                            <input type="number"
+                                   id="max-block-size"
+                                   value="6"
+                                   min="1"
+                                   max="6" />
+                        </div>
+
+                        <!-- Compile button -->
+                        <button id="compile-schedule-btn" style="margin-top: 20px;">Compile Schedule</button>
+                    </div> <!-- /#compiler-options-card -->
+                    <!-- Right column: schedule summary + view switch -->
+                    <div id="schedule-summary-card">
+                        <h3>Compiled Schedule Info</h3>
+
+                        <!-- We'll dynamically insert total credits, TAFB, etc. here in JS -->
+                        <div id="schedule-summary">
+                        </div>
+                    </div>
+
+
+                </div> <!-- /#compiler-container -->
+                <!-- Dedicated container for the final schedule (calendar or list) -->
+                <div id="compiled-schedule-container">
+                    <!-- We dynamically fill this container in JS
+                    (with #calendar-container or other elements) -->
+                    <div id="compiled-schedule"></div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <h4>
+                Reminder: This app cannot miraculously give you pairings that you dont have the seniority to hold.
+            </h4>
+            <h4>
+                <br>
+                Please keep in mind this app is in constant developement, if you have questions, issues, or feature requests. Please reach out to the creator.
+            </h4>
+        </footer>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/js-sha256@0.9.0/src/sha256.min.js"></script>
+    <script src="F9_Bidder.js"></script>
+    <script src="unlocker.js"></script>
+</body>
+</html>
+
