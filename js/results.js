@@ -1,5 +1,5 @@
 ﻿// js/results.js
-let explodedPairings = [];
+
 
 document.getElementById("build-schedule-btn").addEventListener("click", async () => {
     const maxBlockInput = parseInt(document.getElementById("max-block").value, 10);
@@ -64,47 +64,13 @@ function parseTimeToMinutes(timeStr) {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-    const rawFiltered = JSON.parse(sessionStorage.getItem("filteredData") || "[]");
-    if (rawFiltered.length === 0) {
+    explodedPairings = JSON.parse(sessionStorage.getItem("filteredData") || "[]");
+    if (explodedPairings.length === 0) {
         alert("No filtered data found. Please go back and apply filters first.");
         return;
     }
 
-    console.log("Original filtered pairings:", rawFiltered);
-
-    explodedPairings = rawFiltered.flatMap(pairing =>
-        pairing.pairingDates.map(date => ({
-            ...pairing,
-            pairingDate: date
-        }))
-    );
-
-    console.log("Exploded pairings by instance:", explodedPairings);
-
-    // Step 2: Organize by number of calendar days used
-    const organizedByDayCount = {
-        1: [],
-        2: [],
-        3: [],
-        4: [],
-        5: [],
-        6: [],
-    };
-
-    explodedPairings.forEach(pairing => {
-        const startMins = hhmmToMinutes(pairing.shiftStartTime);
-        const tafbMins = parseTimeToMinutes(pairing.tafb);
-        const totalDuration = startMins + tafbMins;
-
-        // Count how many 24-hour boundaries are crossed
-        const calendarDaysUsed = Math.ceil(totalDuration / 1440);
-        const safeDays = Math.min(Math.max(calendarDaysUsed, 1), 6); // Clamp to 1-6
-
-        pairing.calendarDaysUsed = safeDays;
-        organizedByDayCount[safeDays].push(pairing);
-    });
-
-    console.log("Organized by calendar days used:", organizedByDayCount);
+    console.log("Exploded pairings loaded from session:", explodedPairings);
 });
 
 
@@ -280,44 +246,73 @@ async function runDaysOffAlgorithm(explodedList) {
     const sorted = [...filtered].sort((a, b) => {
         return parseTimeToMinutes(b.credit) - parseTimeToMinutes(a.credit);
     });
+    const forward = tryBuildSchedule(sorted);
+    const reverse = tryBuildScheduleReverse(sorted);
+
+    function compareSchedules(a, b) {
+        const days = schedule => {
+            const s = new Set();
+            schedule.forEach(p => {
+                const d = parseInt(p.pairingDate);
+                for (let i = 0; i < p.calendarDaysUsed; i++) s.add(d + i);
+            });
+            return s.size;
+        };
+
+        const credit = schedule => schedule.reduce((sum, p) => sum + parseTimeToMinutes(p.credit), 0);
+
+        if (!a?.success) return b;
+        if (!b?.success) return a;
+
+        const aDays = days(a.schedule);
+        const bDays = days(b.schedule);
+        const aCredit = credit(a.schedule);
+        const bCredit = credit(b.schedule);
+
+        if (bDays < aDays) return b;
+        if (aDays < bDays) return a;
+        return bCredit > aCredit ? b : a;
+    }
+
+    const best = compareSchedules(forward, reverse);
+    if (best?.success) {
+        console.log("✅ Best direction chosen. Optimizing...");
+        const optimized = optimizeScheduleForDaysOff(best.schedule, sorted);
+        displaySchedule(optimized);
+        return;
+    }
+
 
     for (let i = 0; i < sorted.length; i++) {
-        const attempt = tryBuildSchedule(sorted.slice(i));
+        const rotated = [...sorted.slice(i), ...sorted.slice(0, i)];
+        const forwardAttempt = tryBuildSchedule(rotated);
+        const reverseAttempt = tryBuildScheduleReverse(rotated);
 
-//        if (i % 5 === 0 && attempt.schedule && attempt.schedule.length > 0) {
-//            displayInProgressSchedule(attempt.schedule, `Trying schedule starting at #${i + 1}…`);
-//            await new Promise(r => setTimeout(r, 150));
-//      }
+
+        const best = compareSchedules(forwardAttempt, reverseAttempt);
 
         if (i % 5 === 0) {
             const mem = performance?.memory?.usedJSHeapSize || 0;
             const domCount = document.querySelectorAll("*").length;
             console.log(`[Try ${i}] Heap: ${(mem / 1024 / 1024).toFixed(1)} MB, DOM Nodes: ${domCount}`);
-
-            if (attempt.schedule && attempt.schedule.length > 50) {
-                console.warn(`⛔ Too many pairings in schedule preview: ${attempt.schedule.length}`);
-            }
         }
 
         if (i % 10 === 0) {
-            console.log(`[Attempt ${i}] Schedule length: ${attempt.schedule?.length || 0}`);
+            console.log(`[Attempt ${i}] Best schedule length: ${best.schedule?.length || 0}`);
+            console.log(`[Rotation ${i}] First pairing number: ${rotated[0]?.pairingNumber}`);
         }
 
-        if (attempt.success) {
-            console.log("✅ Initial schedule built. Running optimizer...");
-
-            let optimized = optimizeScheduleForDaysOff(attempt.schedule, sorted);
-
-            console.log("✅ Optimized schedule ready. Rendering...");
+        if (best?.success) {
+            console.log("✅ Schedule found via fallback direction. Optimizing...");
+            const optimized = optimizeScheduleForDaysOff(best.schedule, sorted);
             displaySchedule(optimized);
             return;
         }
 
-
-
-        // Allow garbage collection
-        attempt.schedule = null;
+        forwardAttempt.schedule = null;
+        reverseAttempt.schedule = null;
     }
+
 
     document.getElementById("build-status").textContent =
         "❌ No valid schedule could be built after trying all options.";
@@ -326,6 +321,7 @@ async function runDaysOffAlgorithm(explodedList) {
 
 
 function tryBuildSchedule(pairings) {
+    const reverseBuild = false;
     const schedule = [];
     const usedDays = new Set();
     const usedStartDays = new Set();
@@ -377,7 +373,8 @@ function tryBuildSchedule(pairings) {
 
 
         // Accept pairing
-        console.log(`✅ [${p.pairingNumber}] Accepted – starts day ${p.pairingDate}, spans ${p.calendarDaysUsed} days`);
+        console.log(`✅ [${p.pairingNumber}] Accepted – starts day ${p.pairingDate}, spans ${p.calendarDaysUsed} days – Total Credit: ${Math.floor(totalCredit / 60)}h`);
+
 
         schedule.push(p);
         totalCredit += parseTimeToMinutes(p.credit);
@@ -395,6 +392,8 @@ function tryBuildSchedule(pairings) {
     }
 
     console.log("⚠️ No valid schedule built in this attempt.");
+    console.log(`⚠️ Forward build failed. Reached ${Math.floor(totalCredit / 60)} credit hours.`);
+
     return { success: false };
 }
 
@@ -403,6 +402,7 @@ function optimizeScheduleForDaysOff(originalSchedule, allCandidates) {
     let improved = true;
     let loopCount = 0;
     const MAX_LOOPS = 100;
+    const MAX_COMBOS_PER_ROUND = 200;
 
     const totalCredit = () => schedule.reduce((sum, p) => sum + parseTimeToMinutes(p.credit), 0);
 
@@ -426,7 +426,7 @@ function optimizeScheduleForDaysOff(originalSchedule, allCandidates) {
         return maxBlock;
     };
 
-    while (improved && loopCount < MAX_LOOPS) {
+    while ((loopCount < 5 || improved) && loopCount < MAX_LOOPS) {
         improved = false;
         loopCount++;
 
@@ -441,20 +441,42 @@ function optimizeScheduleForDaysOff(originalSchedule, allCandidates) {
 
         console.log(`🔄 Optimization round ${loopCount}`);
 
-        for (let i = 0; i < schedule.length; i++) {
-            const current = schedule[i];
+        for (let i = 0; i < schedule.length - 1; i++) {
+            const originalBlock = schedule.slice(i, i + 2);
+            const candidatePool = allCandidates.filter(p => !schedule.includes(p) && !originalBlock.includes(p));
 
-            for (const candidate of allCandidates) {
-                if (schedule.includes(candidate)) continue;
-                if (usedStartDays.has(candidate.pairingDate)) continue;
+            const combos = [];
+            for (let a = 0; a < candidatePool.length; a++) {
+                for (let b = a + 1; b < candidatePool.length && combos.length < MAX_COMBOS_PER_ROUND; b++) {
+                    combos.push([candidatePool[a], candidatePool[b]]);
+                    for (let c = b + 1; c < candidatePool.length && combos.length < MAX_COMBOS_PER_ROUND; c++) {
+                        combos.push([candidatePool[a], candidatePool[b], candidatePool[c]]);
+                    }
+                }
+                if (combos.length >= MAX_COMBOS_PER_ROUND) break;
+            }
 
-                const newTotal = totalCredit()
-                    - parseTimeToMinutes(current.credit)
-                    + parseTimeToMinutes(candidate.credit);
-                if (newTotal < 60 * 60) continue;
+            combos.sort((a, b) => {
+                const creditA = a.reduce((s, p) => s + parseTimeToMinutes(p.credit), 0);
+                const creditB = b.reduce((s, p) => s + parseTimeToMinutes(p.credit), 0);
+                return creditB - creditA;
+            });
 
+            for (const combo of combos) {
                 const testSchedule = [...schedule];
-                testSchedule[i] = candidate;
+                testSchedule.splice(i, 2, ...combo);
+
+                const testCredit = testSchedule.reduce((sum, p) => sum + parseTimeToMinutes(p.credit), 0);
+                if (testCredit < 60 * 60 || testCredit > 120 * 60) continue;
+
+                const testDays = new Set();
+                testSchedule.forEach(p => {
+                    const d = parseInt(p.pairingDate);
+                    for (let j = 0; j < p.calendarDaysUsed; j++) testDays.add(d + j);
+                });
+
+                const blockLength = countBlock(testDays);
+                if (blockLength > userRules.maxBlockSize || blockLength < userRules.minBlockSize) continue;
 
                 const restSafe = testSchedule.every((p, idx) => {
                     if (idx === 0) return true;
@@ -467,23 +489,17 @@ function optimizeScheduleForDaysOff(originalSchedule, allCandidates) {
 
                 if (!restSafe) continue;
 
-                const daysTest = new Set();
-                testSchedule.forEach(p => {
-                    const start = parseInt(p.pairingDate);
-                    for (let i = 0; i < p.calendarDaysUsed; i++) {
-                        daysTest.add(start + i);
-                    }
-                });
+                const oldDayCount = schedule.reduce((set, p) => {
+                    const d = parseInt(p.pairingDate);
+                    for (let j = 0; j < p.calendarDaysUsed; j++) set.add(d + j);
+                    return set;
+                }, new Set()).size;
 
-                const blockLength = countBlock(daysTest);
-                if (blockLength > userRules.maxBlockSize || blockLength < userRules.minBlockSize) continue;
-
-
-                const oldDayCount = dayCount(usedDays);
-                const newDayCount = dayCount(daysTest);
+                const newDayCount = testDays.size;
 
                 if (newDayCount < oldDayCount) {
-                    schedule[i] = candidate;
+                    console.log(`🧠 Multi-swap success: replaced pairings at index ${i}–${i + 1} with ${combo.length} new ones. Days reduced.`);
+                    schedule = testSchedule;
                     improved = true;
                     break;
                 }
@@ -495,6 +511,77 @@ function optimizeScheduleForDaysOff(originalSchedule, allCandidates) {
 
     console.log(`✅ Optimization complete after ${loopCount} rounds`);
     return schedule;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////// Reverse Build
+function tryBuildScheduleReverse(pairings) {
+    const reverseBuild = true;
+    const schedule = [];
+    const usedDays = new Set();
+    const usedStartDays = new Set();
+
+    let totalCredit = 0;
+    let lastDutyEnd = null;
+    let lastStartDay = null;
+
+    for (let i = pairings.length - 1; i >= 0; i--) {
+        const p = pairings[i];
+        const startDay = parseInt(p.pairingDate);
+        const startTime = hhmmToMinutes(p.shiftStartTime);
+        const tafb = parseTimeToMinutes(p.tafb);
+        const dutyEnd = startTime + tafb + 30;
+
+        if (usedStartDays.has(p.pairingDate)) continue;
+
+        if (lastDutyEnd !== null) {
+            const dayDiff = lastStartDay - startDay;
+            const rest = lastDutyEnd - (startTime + dayDiff * 1440);
+            if (rest < 600) continue;
+        }
+
+        const simulatedDays = new Set([...usedDays]);
+        for (let offset = 0; offset < p.calendarDaysUsed; offset++) {
+            simulatedDays.add(startDay + offset);
+        }
+
+        const sortedDays = Array.from(simulatedDays).sort((a, b) => a - b);
+        let maxBlock = 1;
+        let block = 1;
+        for (let i = 1; i < sortedDays.length; i++) {
+            if (sortedDays[i] === sortedDays[i - 1] + 1) {
+                block++;
+                maxBlock = Math.max(maxBlock, block);
+            } else {
+                block = 1;
+            }
+        }
+
+        if (maxBlock > userRules.maxBlockSize || maxBlock < userRules.minBlockSize) continue;
+        console.log(`✅ [${p.pairingNumber}] Accepted – starts day ${p.pairingDate}, spans ${p.calendarDaysUsed} days – Total Credit: ${Math.floor(totalCredit / 60)}h`);
+
+
+        schedule.push(p);
+        totalCredit += parseTimeToMinutes(p.credit);
+        lastDutyEnd = dutyEnd;
+        lastStartDay = startDay;
+        usedStartDays.add(p.pairingDate);
+        for (let offset = 0; offset < p.calendarDaysUsed; offset++) {
+            usedDays.add(startDay + offset);
+        }
+
+        if (totalCredit >= 60 * 60) return { success: true, schedule };
+    }
+
+    console.log(`⚠️ ${reverseBuild ? "Reverse" : "Forward"} build failed.`);
+    console.log(` • Pairing Instances Checked: ${pairings.length}`);
+    console.log(` • Total Pairings Accepted: ${schedule.length}`);
+    console.log(` • Final Credit: ${Math.floor(totalCredit / 60)}h (${totalCredit} mins)`);
+    console.log(` • Days Worked: ${Array.from(usedDays).sort((a, b) => a - b).join(', ') || "None"}`);
+
+
+    return { success: false };
+
 }
 
 
@@ -531,26 +618,39 @@ async function runLongLayoverAlgorithm(explodedList) {
         return bLayoverPerDay - aLayoverPerDay;
     });
 
-    // Step 3: Try to build a valid schedule using highest layover-per-day first
     for (let i = 0; i < sorted.length; i++) {
-        const attempt = tryBuildSchedule(sorted.slice(i)); // ⬅ reuse our proven builder
+        const rotated = [...sorted.slice(i), ...sorted.slice(0, i)];
+        const forwardAttempt = tryBuildSchedule(rotated);
+        const reverseAttempt = tryBuildScheduleReverse(rotated);
 
-//        if (i % 5 === 0 && attempt.schedule && attempt.schedule.length > 0) {
-//            displayInProgressSchedule(attempt.schedule, `Testing layover schedule #${i + 1}`);
-//            await new Promise(r => setTimeout(r, 100));
-//        }
+        function avgLayover(schedule) {
+            if (!schedule?.schedule || schedule.schedule.length === 0) return 0;
+            const totalTAFB = schedule.schedule.reduce((sum, p) => sum + parseTimeToMinutes(p.tafb), 0);
+            const totalDays = schedule.schedule.reduce((sum, p) => sum + p.calendarDaysUsed, 0);
+            return totalTAFB / totalDays;
+        }
 
-        if (attempt.success) {
-            console.log("✅ Long Layover base schedule built. Running optimizer...");
-            let optimized = optimizeScheduleForLongLayovers(attempt.schedule, sorted);
+        const best = (() => {
+            if (forwardAttempt.success && !reverseAttempt.success) return forwardAttempt;
+            if (reverseAttempt.success && !forwardAttempt.success) return reverseAttempt;
+            if (!forwardAttempt.success && !reverseAttempt.success) return null;
 
-            console.log("✅ Optimized schedule ready. Rendering...");
+            const fAvg = avgLayover(forwardAttempt);
+            const rAvg = avgLayover(reverseAttempt);
+            return rAvg > fAvg ? reverseAttempt : forwardAttempt;
+        })();
+
+        if (best?.success) {
+            console.log("✅ Long Layover schedule built. Running optimizer...");
+            const optimized = optimizeScheduleForLongLayovers(best.schedule, sorted);
             displaySchedule(optimized);
             return;
         }
 
-        attempt.schedule = null;
+        forwardAttempt.schedule = null;
+        reverseAttempt.schedule = null;
     }
+
 
     document.getElementById("build-status").textContent =
         "❌ No valid long layover schedule could be built.";
@@ -657,6 +757,11 @@ function optimizeScheduleForLongLayovers(originalSchedule, allCandidates) {
 
 
 
+
+
+
+
+
 /*
 /////////////END OF LONG LAYOVER ALGO///////////////////
 */
@@ -692,23 +797,32 @@ async function runMaxCreditAlgorithm(explodedList) {
         });
 
         for (let i = 0; i < sorted.length; i++) {
-            const attempt = tryBuildMaxCreditSchedule(sorted.slice(i));
+            const rotated = [...sorted.slice(i), ...sorted.slice(0, i)];
+            const forwardAttempt = tryBuildMaxCreditSchedule(rotated);
+            const reverseAttempt = tryBuildMaxCreditScheduleReverse(rotated);
 
-//            if (i % 5 === 0 && attempt.schedule && attempt.schedule.length > 0) {
-//                displayInProgressSchedule(attempt.schedule, `Max Credit Tier ${tier} – Try #${i + 1}`);
-//                await new Promise(r => setTimeout(r, 100));
-//            }
+            const credit = sched => sched?.schedule?.reduce((sum, p) => sum + parseTimeToMinutes(p.credit), 0) || 0;
 
-            if (attempt.success) {
+            const best = (() => {
+                if (forwardAttempt.success && !reverseAttempt.success) return forwardAttempt;
+                if (reverseAttempt.success && !forwardAttempt.success) return reverseAttempt;
+                if (!forwardAttempt.success && !reverseAttempt.success) return null;
+
+                return credit(forwardAttempt) >= credit(reverseAttempt) ? forwardAttempt : reverseAttempt;
+            })();
+
+            if (best?.success) {
                 console.log(`✅ Max Credit base schedule built at tier ${tier}. Optimizing...`);
-                const optimized = optimizeScheduleForMaxCredit(attempt.schedule, sorted);
+                const optimized = optimizeScheduleForMaxCredit(best.schedule, sorted);
                 console.log("✅ Optimized Max Credit schedule ready. Rendering...");
                 displaySchedule(optimized);
                 return;
             }
 
-            attempt.schedule = null;
+            forwardAttempt.schedule = null;
+            reverseAttempt.schedule = null;
         }
+
     }
 
     document.getElementById("build-status").textContent =
@@ -733,9 +847,10 @@ function tryBuildMaxCreditSchedule(pairings) {
         const tafb = parseTimeToMinutes(p.tafb);
         const dutyEnd = startTime + tafb + 30;
 
-        if (usedStartDays.has(p.pairingDate)) {
-            continue;
-        }
+        const pairingKey = `${p.pairingNumber}-${p.pairingDate}`;
+        if (usedStartDays.has(pairingKey)) continue;
+
+
 
         if (lastDutyEnd !== null) {
             const dayDiff = startDay - lastStartDay;
@@ -773,7 +888,8 @@ function tryBuildMaxCreditSchedule(pairings) {
 
         lastDutyEnd = dutyEnd;
         lastStartDay = startDay;
-        usedStartDays.add(p.pairingDate);
+        usedStartDays.add(pairingKey);
+
         for (let offset = 0; offset < p.calendarDaysUsed; offset++) {
             usedDays.add(startDay + offset);
         }
@@ -788,6 +904,12 @@ function tryBuildMaxCreditSchedule(pairings) {
         console.log(`🎯 Max Credit base complete: ${Math.floor(totalCredit / 60)}h`);
         return { success: true, schedule };
     }
+
+    console.log("⚠️ Forward build failed.");
+    console.log(` • Pairing Instances Checked: ${pairings.length}`);
+    console.log(` • Total Pairings Accepted: ${schedule.length}`);
+    console.log(` • Final Credit: ${Math.floor(totalCredit / 60)}h (${totalCredit} mins)`);
+    console.log(` • Days Worked: ${Array.from(usedDays).sort((a, b) => a - b).join(', ') || "None"}`);
 
     return { success: false };
 }
@@ -901,6 +1023,87 @@ function optimizeScheduleForMaxCredit(originalSchedule, allCandidates) {
 }
 
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////// Reverse Build
+
+function tryBuildMaxCreditScheduleReverse(pairings) {
+    const schedule = [];
+    const usedDays = new Set();
+    const usedStartDays = new Set();
+
+    let totalCredit = 0;
+    let lastDutyEnd = null;
+    let lastStartDay = null;
+
+    for (let i = pairings.length - 1; i >= 0; i--) {
+        const p = pairings[i];
+        const startDay = parseInt(p.pairingDate);
+        const startTime = hhmmToMinutes(p.shiftStartTime);
+        const tafb = parseTimeToMinutes(p.tafb);
+        const dutyEnd = startTime + tafb + 30;
+
+        const pairingKey = `${p.pairingNumber}-${p.pairingDate}`;
+        if (usedStartDays.has(pairingKey)) continue;
+
+
+
+        if (lastDutyEnd !== null) {
+            const dayDiff = lastStartDay - startDay;
+            const rest = lastDutyEnd - (startTime + dayDiff * 1440);
+            if (rest < 600) continue;
+        }
+
+        const simulatedDays = new Set([...usedDays]);
+        for (let offset = 0; offset < p.calendarDaysUsed; offset++) {
+            simulatedDays.add(startDay + offset);
+        }
+
+        const sortedDays = Array.from(simulatedDays).sort((a, b) => a - b);
+        let maxBlock = 1;
+        let block = 1;
+        for (let j = 1; j < sortedDays.length; j++) {
+            if (sortedDays[j] === sortedDays[j - 1] + 1) {
+                block++;
+                maxBlock = Math.max(maxBlock, block);
+            } else {
+                block = 1;
+            }
+        }
+
+        if (maxBlock > userRules.maxBlockSize || maxBlock < userRules.minBlockSize) continue;
+
+        const pairingCredit = parseTimeToMinutes(p.credit);
+        if (totalCredit + pairingCredit > contractualRules.monthlyCreditMax * 60) continue;
+
+        schedule.push(p);
+        totalCredit += pairingCredit;
+
+        lastDutyEnd = dutyEnd;
+        lastStartDay = startDay;
+        usedStartDays.add(pairingKey);
+
+        for (let offset = 0; offset < p.calendarDaysUsed; offset++) {
+            usedDays.add(startDay + offset);
+        }
+
+        if (totalCredit >= 120 * 60) {
+            console.log(`🎯 Max Credit cap hit (Reverse): ${Math.floor(totalCredit / 60)}h`);
+            return { success: true, schedule };
+        }
+    }
+
+    if (totalCredit >= 60 * 60) {
+        console.log(`🎯 Max Credit base complete (Reverse): ${Math.floor(totalCredit / 60)}h`);
+        return { success: true, schedule };
+    }
+    console.log("⚠️ Reverse build failed.");
+    console.log(` • Pairing Instances Checked: ${pairings.length}`);
+    console.log(` • Total Pairings Accepted: ${schedule.length}`);
+    console.log(` • Final Credit: ${Math.floor(totalCredit / 60)}h (${totalCredit} mins)`);
+    console.log(` • Days Worked: ${Array.from(usedDays).sort((a, b) => a - b).join(', ') || "None"}`);
+
+    return { success: false };
+}
 
 
 /*
