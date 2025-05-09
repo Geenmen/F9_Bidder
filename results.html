@@ -1,0 +1,71 @@
+<!-- results.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>F9 Bidder – Results</title>
+    <link rel="stylesheet" href="css/F9_Bidder.css">
+</head>
+<body>
+
+
+    <section id="results-section">
+        <button id="back-btn" class="back-button">← Back</button>
+        <h2>Step 3: Build Your Schedule</h2>
+
+        <form id="rules-form">
+            <fieldset>
+                <legend>Optional Rules</legend>
+                <label>
+                    Maximum Block Size (1–6 days):
+                    <input id="max-block" type="number" min="1" max="6" />
+                </label>
+                <label>
+                    Minimum Block Size (1–6 days):
+                    <input id="min-block" type="number" min="1" max="6" />
+                </label>
+            </fieldset>
+        </form>
+
+        <fieldset id="algorithm-options">
+            <p id="algo-warning" style="color: orange; font-weight: bold; display: none;"></p>
+
+            <legend>Select Schedule Algorithm:</legend>
+
+            <label>
+                <input type="radio" name="algo-choice" value="days-off" checked>
+                Max Days Off
+            </label><br>
+
+            <label>
+                <input type="radio" name="algo-choice" value="layover">
+                Long Layover
+            </label><br>
+            <label>
+                <input type="radio" name="algo-choice" value="max-credit">
+                Max Credit
+            </label>
+
+        </fieldset>
+
+        <button id="build-schedule-btn">Compile Schedule</button>
+
+        <div id="schedule-summary" class="schedule-summary"></div>
+        <div id="build-status" style="font-weight: bold; margin-bottom: 10px;"></div>
+
+        <div id="schedule-output"></div>
+
+        <!-- Modal -->
+        <div id="pairing-modal" class="modal hidden">
+            <div class="modal-content">
+                <span id="modal-close">&times;</span>
+                <h3>Pairing Info</h3>
+                <div id="modal-body"></div>
+            </div>
+        </div>
+
+    </section>
+
+    <script src="js/results.js"></script>
+</body>
+</html>

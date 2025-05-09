@@ -1,0 +1,527 @@
+/* === Base Colors (Dark Mode Only) === */
+:root {
+    --color-bg: #121917;
+    --color-card: #1e2725;
+    --color-border: #34403b;
+    --color-text: #e6f2ec;
+    --color-accent: #00ffb3;
+    --color-accent-alt: #00c292;
+    --color-error: #ff8a80;
+    --color-button-bg: #00c292;
+    --color-button-hover: #00a67e;
+}
+
+/* === Base Reset === */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    font-family: 'Segoe UI', sans-serif;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+/* === Container === */
+.restricted-access {
+    background-color: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-top: 8px solid var(--color-accent);
+    border-radius: 20px;
+    padding: 4rem 3rem;
+    width: 100%;
+    max-width: 800px;
+    box-shadow: 0 8px 40px rgba(0, 255, 179, 0.07);
+    text-align: center;
+    font-size: clamp(1.3rem, 2.8vw, 2rem);
+}
+
+    .restricted-access h1 {
+        font-size: clamp(2.5rem, 6vw, 3.5rem);
+        margin-bottom: 1.5rem;
+        color: var(--color-accent);
+    }
+
+    .restricted-access p {
+        font-size: clamp(1.5rem, 3.5vw, 2.25rem);
+        margin-bottom: 2rem;
+        color: var(--color-text);
+    }
+
+    .restricted-access input {
+        width: 100%;
+        padding: 1.5rem 1.25rem;
+        font-size: clamp(1.4rem, 2.5vw, 2rem);
+        border: 3px solid var(--color-border);
+        border-radius: 10px;
+        background-color: #101614;
+        color: var(--color-text);
+        transition: border-color 0.3s;
+        margin-bottom: 2rem;
+    }
+
+        .restricted-access input:focus {
+            border-color: var(--color-accent-alt);
+            outline: none;
+        }
+
+    .restricted-access button {
+        width: 100%;
+        padding: 1.4rem;
+        font-size: clamp(1.5rem, 2.7vw, 2.3rem);
+        background-color: var(--color-button-bg);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+        .restricted-access button:hover {
+            background-color: var(--color-button-hover);
+        }
+
+.error {
+    color: var(--color-error);
+    font-size: clamp(1rem, 2vw, 1.6rem);
+    margin-top: 1rem;
+}
+
+
+
+/* === Upload Section (Dark Mode, Responsive, Oversized) === */
+#upload-section {
+    background-color: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-top: 8px solid var(--color-accent);
+    border-radius: 20px;
+    padding: 4rem 3rem;
+    width: 100%;
+    max-width: 800px;
+    margin: 3rem auto;
+    text-align: center;
+    box-shadow: 0 8px 40px rgba(0, 255, 179, 0.07);
+    font-size: clamp(1.3rem, 2.8vw, 2rem);
+}
+
+    #upload-section h2 {
+        font-size: clamp(2.5rem, 6vw, 3.5rem);
+        margin-bottom: 2.5rem;
+        color: var(--color-accent);
+    }
+
+    /* File Input */
+    #upload-section input[type="file"] {
+        display: block;
+        margin: 0 auto 2.5rem;
+        padding: 1.4rem;
+        font-size: clamp(1.4rem, 2.5vw, 2rem);
+        border-radius: 10px;
+        border: 3px solid var(--color-border);
+        background-color: #101614;
+        color: var(--color-text);
+        transition: border-color 0.3s;
+        width: 100%;
+        max-width: 600px;
+    }
+
+        #upload-section input[type="file"]:focus {
+            border-color: var(--color-accent-alt);
+            outline: none;
+        }
+
+    /* Button */
+    #upload-section button {
+        background-color: var(--color-button-bg);
+        color: white;
+        border: none;
+        padding: 1.4rem;
+        font-size: clamp(1.5rem, 2.7vw, 2.3rem);
+        border-radius: 10px;
+        width: 100%;
+        max-width: 400px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+        #upload-section button:disabled {
+            background-color: #444a48;
+            cursor: not-allowed;
+        }
+
+        #upload-section button:hover:enabled {
+            background-color: var(--color-button-hover);
+        }
+
+/* Preview */
+#processed-preview {
+    margin-top: 2rem;
+    font-size: clamp(1.1rem, 2vw, 1.8rem);
+    color: #bbb;
+    font-style: italic;
+}
+
+
+/* === Filter Section (Dark Mode, Fixed 2-Column Layout) === */
+#filter-section {
+    background-color: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-top: 8px solid var(--color-accent);
+    border-radius: 20px;
+    padding: 4rem 3rem;
+    width: 90vw;
+    max-width: 1100px;
+    margin: 3rem auto;
+    box-shadow: 0 8px 40px rgba(0, 255, 179, 0.07);
+    font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+    overflow-x: hidden;
+}
+
+
+
+    /* Title */
+    #filter-section h2 {
+        font-size: clamp(2.2rem, 5.5vw, 3.4rem);
+        margin-bottom: 2.5rem;
+        color: var(--color-accent);
+        text-align: center;
+    }
+
+/* Fixed 2-column grid */
+.filter-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2.5rem 4rem;
+    align-items: flex-start;
+    width: 100%;
+}
+
+
+
+    .filter-grid label {
+        display: flex;
+        flex-direction: column;
+        font-size: clamp(1.25rem, 2.3vw, 1.6rem);
+        font-weight: 600;
+        color: var(--color-text);
+        width: 100%;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .filter-grid input {
+        margin-top: 0.6rem;
+        padding: 1.3rem 1.2rem;
+        font-size: clamp(1.3rem, 2.1vw, 1.7rem);
+        border: 2px solid var(--color-border);
+        border-radius: 10px;
+        background-color: #0f1615;
+        color: var(--color-text);
+        width: 100%;
+        transition: border-color 0.3s, background-color 0.3s;
+    }
+
+        .filter-grid input:focus {
+            border-color: var(--color-accent-alt);
+            background-color: #121d1b;
+            outline: none;
+        }
+
+    /* Add extra space between rows */
+    .filter-grid > label:not(:last-child) {
+        margin-bottom: 1rem;
+    }
+
+fieldset {
+    padding: 2.5rem 2rem;
+    margin-bottom: 3rem;
+    border: 2px solid var(--color-border);
+    border-radius: 14px;
+    background-color: #151c1a;
+}
+
+legend {
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    font-weight: bold;
+    color: var(--color-accent);
+    padding: 0 1rem;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+
+/* Button */
+#apply-filters-btn {
+    background-color: var(--color-button-bg);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: clamp(1.5rem, 2.3vw, 2rem);
+    padding: 1.3rem 2rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto 2rem;
+    display: block;
+}
+
+    #apply-filters-btn:hover {
+        background-color: var(--color-button-hover);
+    }
+
+/* Back Button */
+.back-button {
+    display: inline-block;
+    background: transparent;
+    border: 2px solid var(--color-accent);
+    color: var(--color-accent);
+    padding: 1rem 2rem;
+    border-radius: 10px;
+    font-size: clamp(1.2rem, 2vw, 1.6rem);
+    cursor: pointer;
+    margin: 0 auto 3rem;
+    transition: background-color 0.2s, color 0.2s;
+    display: block;
+}
+
+    .back-button:hover {
+        background-color: var(--color-accent);
+        color: var(--color-bg);
+    }
+
+/* Summary */
+#filter-summary.summary {
+    font-size: clamp(1.1rem, 2vw, 1.5rem);
+    text-align: center;
+    color: #b0c9c0;
+    margin-top: 2rem;
+    font-style: italic;
+}
+
+
+
+
+
+/* === Results Section === */
+#results-section {
+    background-color: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-top: 8px solid var(--color-accent);
+    border-radius: 20px;
+    padding: 4rem 3rem;
+    width: 90vw;
+    max-width: 1200px;
+    margin: 3rem auto;
+    box-shadow: 0 8px 40px rgba(0, 255, 179, 0.07);
+    font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+}
+
+    #results-section h2 {
+        font-size: clamp(2.4rem, 5vw, 3.5rem);
+        color: var(--color-accent);
+        margin-bottom: 2.5rem;
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+/* === Fieldsets & Inputs === */
+fieldset {
+    padding: 2.5rem 2rem;
+    margin-bottom: 3rem;
+    border: 2px solid var(--color-border);
+    border-radius: 14px;
+    background-color: #151c1a;
+}
+
+legend {
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    font-weight: bold;
+    color: var(--color-accent);
+    padding: 0 1rem;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+}
+
+label {
+    display: block;
+    font-size: clamp(1.3rem, 2.3vw, 1.7rem);
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 1.5rem;
+}
+
+    label input[type="number"],
+    label input[type="radio"] {
+        margin-top: 0.5rem;
+        padding: 1rem;
+        font-size: clamp(1.2rem, 2vw, 1.6rem);
+        border: 2px solid var(--color-border);
+        border-radius: 10px;
+        background-color: #101614;
+        color: var(--color-text);
+        width: 100%;
+        max-width: 300px;
+        box-sizing: border-box;
+    }
+
+/* Radio Buttons inline */
+#algorithm-options label {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1rem 0;
+    font-size: clamp(1.4rem, 2.5vw, 2rem);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* Scale radio input */
+#algorithm-options input[type="radio"] {
+    width: 2.2rem;
+    height: 2.2rem;
+    accent-color: var(--color-accent);
+    flex-shrink: 0;
+    transform: scale(1.4);
+}
+
+
+/* Warning */
+#algo-warning {
+    font-size: clamp(1.1rem, 2vw, 1.5rem);
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+/* === Buttons === */
+#build-schedule-btn,
+.back-button {
+    display: block;
+    width: 100%;
+    max-width: 420px;
+    margin: 2rem auto;
+    padding: 1.4rem 2rem;
+    font-size: clamp(1.4rem, 2.4vw, 2rem);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#build-schedule-btn {
+    background-color: var(--color-button-bg);
+    color: white;
+}
+
+    #build-schedule-btn:hover {
+        background-color: var(--color-button-hover);
+    }
+
+.back-button {
+    background-color: transparent;
+    border: 2px solid var(--color-accent);
+    color: var(--color-accent);
+}
+
+    .back-button:hover {
+        background-color: var(--color-accent);
+        color: var(--color-bg);
+    }
+
+/* === Summary & Status === */
+.schedule-summary {
+    text-align: center;
+    font-size: clamp(1.2rem, 2vw, 1.6rem);
+    color: #cbe3d9;
+    margin-top: 1.5rem;
+    font-style: italic;
+}
+
+#build-status {
+    text-align: center;
+    color: var(--color-accent);
+    font-weight: bold;
+    font-size: clamp(1.2rem, 2vw, 1.6rem);
+    margin-bottom: 2rem;
+}
+
+/* === Schedule Calendar === */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.calendar-day {
+    background-color: #18201e;
+    border: 2px solid var(--color-border);
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    font-size: clamp(1rem, 1.8vw, 1.4rem);
+    min-height: 140px;
+    color: var(--color-text);
+}
+
+.pairing-tile {
+    background-color: var(--color-button-bg);
+    color: white;
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    margin-top: 0.5rem;
+    display: inline-block;
+    font-size: clamp(0.9rem, 1.4vw, 1.2rem);
+    cursor: pointer;
+}
+
+/* === Modal === */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+    .modal.hidden {
+        display: none;
+    }
+
+.modal-content {
+    background-color: var(--color-card);
+    padding: 3rem;
+    border-radius: 16px;
+    max-width: 600px;
+    width: 90%;
+    box-shadow: 0 6px 32px rgba(0, 255, 179, 0.07);
+    position: relative;
+    font-size: clamp(1.1rem, 2vw, 1.5rem);
+}
+
+#modal-close {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    font-size: 2rem;
+    cursor: pointer;
+    color: #aaa;
+}
+
+#modal-body p {
+    margin-bottom: 1rem;
+}

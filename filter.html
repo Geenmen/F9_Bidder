@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>F9 Bidder � Filters</title>
+    <link rel="stylesheet" href="css/F9_Bidder.css">
+</head>
+<body>
+    <section id="filter-section">
+        <button id="back-btn" class="back-button">← Back</button>
+        <h2>Step 2: Define Your Filters</h2>
+
+        <fieldset>
+            <legend>Daily Filters</legend>
+            <div class="filter-grid">
+
+                <label>
+                    Min Credit Hours (hhmm):
+                    <input id="credit-min" type="text" placeholder="e.g. 0500" />
+                </label>
+                <label>
+                    Max Credit Hours (hhmm):
+                    <input id="credit-max" type="text" placeholder="e.g. 1200" />
+                </label>
+                <label>
+                    Max TAFB (hhmm):
+                    <input id="tafb-max" type="text" placeholder="e.g. 0600" />
+                </label>
+                <label>
+                    Earliest Duty On Time:
+                    <input id="duty-on-earliest" type="time" />
+                </label>
+                <label>
+                    Latest Duty Off Time:
+                    <input id="duty-off-latest" type="time" />
+                </label>
+                <label>
+                    Maximum Legs:
+                    <input id="max-legs" type="number" min="1" placeholder="e.g. 4" />
+                </label>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Monthly Filters</legend>
+            <div class="filter-grid">
+                <label>
+                    Days Off (comma-sep dates):
+                    <input id="days-off" type="text" placeholder="e.g. 1,15,30" />
+                </label>
+                <label>
+                    Remove Pairing Routes:
+                    <input id="remove-routes" type="text" placeholder="e.g. DEN-ORD, LAX-JFK" />
+                </label>
+                <label>
+                    Allow Only Routes:
+                    <input id="allow-routes" type="text" placeholder="e.g. SFO-LAX, ATL-MCO" />
+                </label>
+            </div>
+        </fieldset>
+
+        <button id="apply-filters-btn">Apply &amp; Continue</button>
+        <p id="filter-summary" class="summary"></p>
+    </section>
+
+    <script src="js/filter.js"></script>
+</body>
+</html>
